@@ -3,7 +3,9 @@ package com.incra.spark
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.mllib.classification.SVMWithSGD
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.optimization.L1Updater
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
@@ -55,7 +57,33 @@ object TimeSeriesClassification {
 
     Logger.getRootLogger.setLevel(Level.WARN)
 
-    val examples = MLUtils.loadLibSVMFile(sc, params.input).cache()
+    // Read raw data
+    val data = sc.textFile(params.input).map { line =>
+      val parts = line.split(',')
+      val row = parts.map(_.toDouble)
+
+      val n = row.length - 1
+      val sum = row.drop(1).sum
+      val sumSquares = row.drop(1).foldLeft(0.0) { (a, x) => a + x * x}
+
+      val mean = sum / n
+      val stdev = Math.sqrt(n * sumSquares - sum * sum) / n
+      println(mean)
+      println(stdev)
+
+      row.map(x => (x - mean) / stdev)
+    }
+
+    // feature extract
+    val examples = data.map { row => {
+      val label = row.head
+      val numFeatures = 3
+
+      var indices = Array(1, 2, 3)
+      var values = Array(4.5, 6.7, 8.8)
+      LabeledPoint(label, Vectors.sparse(numFeatures, indices, values))
+    }
+    }.cache()
 
     val splits = examples.randomSplit(Array(0.8, 0.2))
     val training = splits(0).cache()
