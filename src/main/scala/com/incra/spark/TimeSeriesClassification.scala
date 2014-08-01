@@ -1,5 +1,11 @@
 package com.incra.spark
 
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.mllib.classification.SVMWithSGD
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.optimization.L1Updater
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
 
