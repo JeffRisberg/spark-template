@@ -6,17 +6,16 @@ import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.optimization.L1Updater
 import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
 
 /**
- * Time Series Classification basic example
+ * Time Series Classification example
  */
 object TimeSeriesClassification {
 
   case class Params(
-                     input: String = "./test-data/time_series_classification_data.txt",
+                     input: String = "./test-data/time_series_classification_data.csv",
                      numIterations: Int = 100,
                      stepSize: Double = 1.0,
                      regParam: Double = 0.1)
@@ -69,46 +68,47 @@ object TimeSeriesClassification {
       var points = row.drop(1)
 
       // Normalize
-      val n = row.length - 1
+      val n = points.length
       val sumY = points.sum
-      val sumX2 = n * n * n / 3 + n * n / 2 + n / 6
+      val sumX2 = (n - 1) * (n - 1) * (n - 1) / 3 + (n - 1) * (n - 1) / 2 + (n - 1) / 6
       val sumY2 = points.foldLeft(0.0) { (a, y) => a + y * y}
 
       val ybar = sumY / n
-      var xbar = n / 2
-      val stdev = Math.sqrt(n * sumX2 - sumY * sumY) / n
+      var xbar = (n - 1) / 2.0
+      val stdev = Math.sqrt(n * sumY2 - sumY * sumY) / n
 
-      val normalizedPoints = points.map(y => (y - ybar) / stdev)
+      val normalizedPoints = points.map(y => if (stdev <= 0) (y - ybar) else (y - ybar) / stdev)
 
       // Feature extract
       var xxbar = 0.0
-      var yybar = 0.0
       var xybar = 0.0
-      var y = 0
-      points.foreach { x =>
+      var x = 0
+      points.foreach { y =>
         xxbar += (x - xbar) * (x - xbar)
-
         xybar += (x - xbar) * (y - ybar)
-        y = y + 1
+        x = x + 1
       }
-      var slope: Double = xybar / xxbar
-      println(slope)
+      val slope = xybar / xxbar
 
-      var largestDelta = 0.0
+      var largestDelta = normalizedPoints.head
       var oneSigmaOutliers = 0
       var twoSigmaOutliers = 0
+      var threeSigmaOutliers = 0
       var priorValue = 0.0
 
-      normalizedPoints.foreach { x =>
-        if (Math.abs(x - priorValue) > largestDelta) largestDelta = Math.abs(x - priorValue)
-        if (Math.abs(x) > 2) twoSigmaOutliers = twoSigmaOutliers + 1
-        if (Math.abs(x) > 1) oneSigmaOutliers = oneSigmaOutliers + 1
-        priorValue = x
+      normalizedPoints.foreach { y =>
+        if (Math.abs(y - priorValue) > largestDelta) largestDelta = Math.abs(y - priorValue)
+        if (Math.abs(y) > 3) threeSigmaOutliers = threeSigmaOutliers + 1
+        if (Math.abs(y) > 2) twoSigmaOutliers = twoSigmaOutliers + 1
+        if (Math.abs(y) > 1) oneSigmaOutliers = oneSigmaOutliers + 1
+        priorValue = y
       }
+      println(s"yBar $ybar stddev $stdev slope $slope, largestDelta $largestDelta, oneSigmaOutliers $oneSigmaOutliers")
 
-      val numFeatures = 3
-      var indices = Array(1, 2, 3, 4, 5, 6)
-      var values = Array(ybar, stdev, slope, largestDelta, oneSigmaOutliers, twoSigmaOutliers)
+      val numFeatures = 7
+      var indices = Array(0, 1, 2, 3, 4, 5, 6)
+      var values = Array(ybar, stdev, slope, largestDelta, oneSigmaOutliers, twoSigmaOutliers, threeSigmaOutliers)
+
       LabeledPoint(label, Vectors.sparse(numFeatures, indices, values))
     }
     }.cache()
