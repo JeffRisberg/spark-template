@@ -1,11 +1,5 @@
 package com.incra.spark
 
-import org.apache.log4j.{Level, Logger}
-import org.apache.spark.mllib.classification.SVMWithSGD
-import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
-import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.optimization.L1Updater
-import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.{SparkConf, SparkContext}
 import scopt.OptionParser
 
@@ -132,6 +126,7 @@ object TimeSeriesClassification {
       .setUpdater(updater)
       .setRegParam(params.regParam)
     val model = algorithm.run(training).clearThreshold()
+    println("Training done")
 
     val prediction = model.predict(test.map(_.features))
     val predictionAndLabel = prediction.zip(test.map(_.label))
