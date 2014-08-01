@@ -76,6 +76,7 @@ object SVMClassification {
       .setUpdater(updater)
       .setRegParam(params.regParam)
     val model = algorithm.run(training).clearThreshold()
+    println("Training done")
 
     val prediction = model.predict(test.map(_.features))
     val predictionAndLabel = prediction.zip(test.map(_.label))
