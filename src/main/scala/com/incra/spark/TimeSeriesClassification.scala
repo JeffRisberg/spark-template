@@ -60,27 +60,55 @@ object TimeSeriesClassification {
     // Read raw data
     val data = sc.textFile(params.input).map { line =>
       val parts = line.split(',')
-      val row = parts.map(_.toDouble)
-
-      val n = row.length - 1
-      val sum = row.drop(1).sum
-      val sumSquares = row.drop(1).foldLeft(0.0) { (a, x) => a + x * x}
-
-      val mean = sum / n
-      val stdev = Math.sqrt(n * sumSquares - sum * sum) / n
-      println(mean)
-      println(stdev)
-
-      row.map(x => (x - mean) / stdev)
+      parts.map(_.toDouble)
     }
 
-    // feature extract
+    // Set up Labeled Points
     val examples = data.map { row => {
       val label = row.head
-      val numFeatures = 3
+      var points = row.drop(1)
 
-      var indices = Array(1, 2, 3)
-      var values = Array(4.5, 6.7, 8.8)
+      // Normalize
+      val n = row.length - 1
+      val sumY = points.sum
+      val sumX2 = n * n * n / 3 + n * n / 2 + n / 6
+      val sumY2 = points.foldLeft(0.0) { (a, y) => a + y * y}
+
+      val ybar = sumY / n
+      var xbar = n / 2
+      val stdev = Math.sqrt(n * sumX2 - sumY * sumY) / n
+
+      val normalizedPoints = points.map(y => (y - ybar) / stdev)
+
+      // Feature extract
+      var xxbar = 0.0
+      var yybar = 0.0
+      var xybar = 0.0
+      var y = 0
+      points.foreach { x =>
+        xxbar += (x - xbar) * (x - xbar)
+
+        xybar += (x - xbar) * (y - ybar)
+        y = y + 1
+      }
+      var slope: Double = xybar / xxbar
+      println(slope)
+
+      var largestDelta = 0.0
+      var oneSigmaOutliers = 0
+      var twoSigmaOutliers = 0
+      var priorValue = 0.0
+
+      normalizedPoints.foreach { x =>
+        if (Math.abs(x - priorValue) > largestDelta) largestDelta = Math.abs(x - priorValue)
+        if (Math.abs(x) > 2) twoSigmaOutliers = twoSigmaOutliers + 1
+        if (Math.abs(x) > 1) oneSigmaOutliers = oneSigmaOutliers + 1
+        priorValue = x
+      }
+
+      val numFeatures = 3
+      var indices = Array(1, 2, 3, 4, 5, 6)
+      var values = Array(ybar, stdev, slope, largestDelta, oneSigmaOutliers, twoSigmaOutliers)
       LabeledPoint(label, Vectors.sparse(numFeatures, indices, values))
     }
     }.cache()
