@@ -81,6 +81,16 @@ object SVMClassification {
     val prediction = model.predict(test.map(_.features))
     val predictionAndLabel = prediction.zip(test.map(_.label))
 
+    predictionAndLabel.foreach { x =>
+      val result = if (x._1 > 0) 1.0 else 0.0
+      val isCorrect = (result == x._2)
+
+      //(s" test ${x._1} $result ${x._2} $isCorrect")
+    }
+
+    val accuracyA = predictionAndLabel.filter(x => (if (x._1 > 0) 1.0 else 0.0) == x._2).count().toDouble / numTest
+    println(s"Test accuracy = ${accuracyA * 100.0} %.")
+
     val metrics = new BinaryClassificationMetrics(predictionAndLabel)
 
     println(s"Test areaUnderPR = ${metrics.areaUnderPR()}.")
