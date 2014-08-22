@@ -1,4 +1,4 @@
-name := "spark_template"
+name := "spark-template"
 
 version := "0.1"
 
