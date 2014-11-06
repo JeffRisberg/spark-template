@@ -21,6 +21,7 @@ object Optimization01 {
 
   case class Params(
                      numIterations: Int = 15,
+                     numPoints: Int = 5,
                      stepSize: Double = 0.15,
                      regParam: Double = 0.1,
                      miniBatchFraction: Double = 1.0)
@@ -122,6 +123,9 @@ object Optimization01 {
       opt[Int]("numIterations")
         .text("number of iterations")
         .action((x, c) => c.copy(numIterations = x))
+      opt[Int]("numPoints")
+        .text("number of datapoints")
+        .action((x, c) => c.copy(numPoints = x))
       opt[Double]("stepSize")
         .text(s"initial step size, default: ${defaultParams.stepSize}")
         .action((x, c) => c.copy(stepSize = x))
@@ -149,7 +153,7 @@ object Optimization01 {
     val gradient = new ExampleGradient2()
 
     var dataList = ListBuffer[(Double, Vector)]()
-    for (i <- Range(0, 5)) {
+    for (i <- Range(0, params.numPoints)) {
       val target = (i + 1).toDouble
       val noise = Math.random() / 10.0 - 0.05
 
@@ -161,7 +165,7 @@ object Optimization01 {
 
     val result = GradientDescent.runMiniBatchSGD(
       distData,
-      new LeastSquaresGradient2,
+      gradient,
       updater,
       params.stepSize,
       params.numIterations,
