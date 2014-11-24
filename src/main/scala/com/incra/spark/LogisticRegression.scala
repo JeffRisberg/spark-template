@@ -1,6 +1,5 @@
 package com.incra.spark
 
-
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS
 import org.apache.spark.mllib.classification.SVMWithSGD
@@ -21,7 +20,7 @@ import org.apache.spark.mllib.optimization.{SquaredL2Updater, L1Updater}
  * A synthetic dataset is located at `data/mllib/sample_binary_classification_data.txt`.
  * If you use it as a template to create your own app, please use `spark-submit` to submit your app.
  */
-object LogisticClassification {
+object LogisticRegression {
 
   object RegType extends Enumeration {
     type RegType = Value
