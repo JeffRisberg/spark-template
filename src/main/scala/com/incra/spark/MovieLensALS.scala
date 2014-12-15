@@ -22,12 +22,12 @@ object MovieLensALS {
   }
 
   case class Params(
-      input: String = "./test-data/movielens_data.txt",
-      kryo: Boolean = false,
-      numIterations: Int = 20,
-      lambda: Double = 1.0,
-      rank: Int = 10,
-      implicitPrefs: Boolean = false)
+                     input: String = "./test-data/movielens_data.txt",
+                     kryo: Boolean = false,
+                     numIterations: Int = 20,
+                     lambda: Double = 1.0,
+                     rank: Int = 10,
+                     implicitPrefs: Boolean = false)
 
   def main(args: Array[String]) {
     val defaultParams = Params()
@@ -143,6 +143,21 @@ object MovieLensALS {
 
     println(s"Test RMSE = $rmse.")
 
+    val ratingList = for (i <- 0 to numMovies.toInt-1) yield (Rating(0, i, 0.0))
+
+    val ratingRDD = sc.parallelize(ratingList)
+
+    val result = model.predict(ratingRDD.map(x => (x.user, x.product)))
+
+    // sort by x.rating
+    val resultsorted = result.sortBy({ x => -x.rating})
+
+    // take the top 10
+    val resultsortedFirst10 = resultsorted.take(10)
+
+    resultsortedFirst10.foreach(x => println("the rating for of movie " + x.product + " is " + x.rating)
+    )
+
     sc.stop()
   }
 
@@ -152,7 +167,7 @@ object MovieLensALS {
     def mapPredictedRating(r: Double) = if (implicitPrefs) math.max(math.min(r, 1.0), 0.0) else r
 
     val predictions: RDD[Rating] = model.predict(data.map(x => (x.user, x.product)))
-    val predictionsAndRatings = predictions.map{ x =>
+    val predictionsAndRatings = predictions.map { x =>
       ((x.user, x.product), mapPredictedRating(x.rating))
     }.join(data.map(x => ((x.user, x.product), x.rating))).values
     math.sqrt(predictionsAndRatings.map(x => (x._1 - x._2) * (x._1 - x._2)).mean())
