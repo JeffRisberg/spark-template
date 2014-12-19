@@ -155,7 +155,7 @@ object MovieLensALS {
     // take the top 10
     val resultsortedFirst10 = resultsorted.take(10)
 
-    resultsortedFirst10.foreach(x => println("the rating for of movie " + x.product + " is " + x.rating)
+    resultsortedFirst10.foreach(x => println("the rating for movie " + x.product + " is " + x.rating)
     )
 
     sc.stop()
