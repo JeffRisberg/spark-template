@@ -3,7 +3,7 @@ package com.incra
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext._
 
-object WordCountRunner {
+object WordCount {
 
   def main(args: Array[String]) {
     val sc = Helper.getSparkContext(args)
