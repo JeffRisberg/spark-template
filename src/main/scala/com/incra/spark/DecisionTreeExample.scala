@@ -16,14 +16,14 @@ import org.apache.spark.rdd.RDD
 /**
  * An example decision tree application
  */
-object DecisionTree {
+object DecisionTreeExample {
 
   object ImpurityType extends Enumeration {
     type ImpurityType = Value
     val Gini, Entropy, Variance = Value
   }
 
-  import com.incra.spark.DecisionTree.ImpurityType._
+  import com.incra.spark.DecisionTreeExample.ImpurityType._
 
   case class Params(
                      input: String = "./test-data/tree_data.csv",
