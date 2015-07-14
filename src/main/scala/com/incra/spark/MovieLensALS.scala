@@ -143,6 +143,8 @@ object MovieLensALS {
 
     println(s"Test RMSE = $rmse.")
 
+    // Create a new ratings list, in which we don't know anything about any movie.
+    // This will give us a prediction which is the most popular movies first
     val ratingList = for (i <- 0 to numMovies.toInt-1) yield (Rating(0, i, 0.0))
 
     val ratingRDD = sc.parallelize(ratingList)
