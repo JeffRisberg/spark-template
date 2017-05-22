@@ -6,7 +6,6 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.optimization.{L1Updater, SimpleUpdater, SquaredL2Updater}
 import org.apache.spark.mllib.regression.{LabeledPoint, LinearRegressionWithSGD}
 import org.apache.spark.{SparkConf, SparkContext}
-import scopt.OptionParser
 
 /**
   * An example app for linear regression.
@@ -21,9 +20,8 @@ object PredictSales extends App {
   import PredictSales.RegType._
 
   case class Params(
-                     input: String = "./test-data/linear_regression_data.txt",
                      numIterations: Int = 100,
-                     stepSize: Double = 1.0,
+                     stepSize: Double = 0.0010,
                      regType: RegType = L2,
                      regParam: Double = 0.1)
 
@@ -41,17 +39,27 @@ object PredictSales extends App {
   var areaMIndex = 0
 
   def parse(data: Array[String]): LabeledPoint = {
-    val priceDoc = data(priceDocIndex).toDouble
+    val priceDoc = Math.log(data(priceDocIndex).toDouble+1)
 
-    val fullSq = data(fullSqIndex).toDouble
+    var fullSq = 40.0
+
+    try {
+      fullSq = data(fullSqIndex).toDouble
+    }
+    catch {
+      case e:Exception => println(e)
+    }
+
     val lifeSq = data(lifeSqIndex).toDouble
     val floor = data(floorIndex).toDouble
     val areaM = data(areaMIndex).toDouble
 
     val label = priceDoc
-    val numFeatures = 4
-    var indices = Array(0, 1, 2, 3)
-    var values = Array(fullSq, lifeSq, floor, areaM)
+    val numFeatures = 2
+    //var indices = Array(0, 1, 2, 3)
+    //var values = Array(fullSq, lifeSq, floor, areaM)
+    var indices = Array(0, 1)
+    var values = Array(fullSq, lifeSq)
 
     LabeledPoint(label, Vectors.sparse(numFeatures, indices, values))
   }
@@ -63,12 +71,16 @@ object PredictSales extends App {
     Logger.getRootLogger.setLevel(Level.WARN)
 
     val base = "./sberbank/"
-    val rawData = sc.textFile(base + "train.csv")
+    val rawData = sc.textFile(base + "subset.csv")
 
     val headerAndRows = rawData.map { line => mLine(line) }
     val header = headerAndRows.first
 
     priceDocIndex = header.indexOf("price_doc")
+    fullSqIndex = header.indexOf("full_sq")
+    lifeSqIndex = header.indexOf("life_sq")
+    floorIndex = header.indexOf("floor")
+    areaMIndex = header.indexOf("area_m")
 
     val data = headerAndRows.filter(_ (0) != header(0))
 
@@ -84,17 +96,16 @@ object PredictSales extends App {
 
     data.unpersist(blocking = false)
 
-    fullSqIndex = header.indexOf("full_sq")
-    lifeSqIndex = header.indexOf("life_sq")
-    floorIndex = header.indexOf("floor")
-    areaMIndex = header.indexOf("area_m")
-
+    println(params.regType)
     val updater = params.regType match {
       case NONE => new SimpleUpdater()
       case L1 => new L1Updater()
       case L2 => new SquaredL2Updater()
     }
 
+    training.take(35).foreach(println)
+
+    println("Iterations: " + params.numIterations);
     val algorithm = new LinearRegressionWithSGD()
     algorithm.optimizer
       .setNumIterations(params.numIterations)
